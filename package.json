@@ -1,10 +1,12 @@
 {
   "name": "@printee-network/auth-client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Client di auth: vocabolario dei ruoli + verifica dei token via JWKS. Ciò che un servizio installa per parlare con l'IdP.",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "scripts": {
     "build": "rimraf ./build && tsc",
     "prepare": "npm run build"
@@ -14,7 +16,9 @@
     "express": ">=4.17"
   },
   "peerDependenciesMeta": {
-    "express": { "optional": true }
+    "express": {
+      "optional": true
+    }
   },
   "dependencies": {
     "jose": "^5.9.6"

@@ -3,5 +3,7 @@ export type { AuthClaims, Realm } from "./claims";
 export { hasPermission, isRole, ROLES, toRole } from "./roles";
 export type { Role } from "./roles";
 export { AuthVerifier, InvalidTokenError } from "./verifier";
+export { ServiceTokenError, ServiceTokenProvider } from "./serviceTokenProvider";
+export type { ServiceTokenProviderOptions } from "./serviceTokenProvider";
 export type { VerifierOptions } from "./verifier";
 export { authorize, authorizeAny, createAuthentication } from "./express";
