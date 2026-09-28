@@ -16,23 +16,51 @@ issuer e audience" — non "copia questi file e ricordati di aggiornarli".
 
 ## Uso
 
+### Verificare un token in ingresso
+
 ```ts
-import { AuthVerifier, createAuthentication, authorize, authorizeAny } from "@printee-network/auth-client";
+import { AuthVerifier, isServiceIdentity } from "@printee-network/auth-client";
 
 const verifier = new AuthVerifier({
   issuer: process.env.AUTH_ISSUER!,   // es. https://auth.<dominio>
   audience: "be",                      // il nome di QUESTO servizio
 });
 
-const authentication = createAuthentication(verifier);
-
-router.get("/quotes", authentication, authorize("SELLER"), controller);
-router.post("/catalog/sync", authentication, authorizeAny(["SERVICE"]), controller);
+const claims = await verifier.verify(token); // lancia se firma, issuer o audience non tornano
 ```
 
-`createAuthentication` sostituisce l'`authentication.ts` del servizio — **è l'unico file di
-autenticazione che il refactoring cambia**. `authorize()` e `authorizeAny()` hanno la stessa firma
-e la stessa semantica di quelli del `be`: le chiamate esistenti non si toccano.
+**Verificare il token non basta a decidere chi entra.** Ogni utente ha un token valido: la rotta
+deve dire chi ammette.
+
+- **Un servizio si riconosce dal soggetto**: `claims.sub === "service:<clientId>"`, oppure
+  `isServiceIdentity(claims)` per «un servizio qualsiasi». **Mai dal realm**: i token di servizio
+  nascono `realm: "platform-admin"`, quindi il realm non distingue una persona da un servizio.
+- **Il tenant sta nel claim `slug`.** Non esiste un claim `tenant`.
+
+### Chiamare un altro servizio
+
+```ts
+import { ServiceTokenProvider } from "@printee-network/auth-client";
+
+const tokens = new ServiceTokenProvider({
+  issuer: process.env.AUTH_ISSUER!,
+  clientId: process.env.AUTH_CLIENT_ID!,
+  clientSecret: process.env.AUTH_CLIENT_SECRET!,
+});
+
+await tokens.forService("be", "acme");           // senza utente; tenant opzionale
+await tokens.onBehalfOf("cc-api", userToken);    // per conto di un utente (token exchange)
+```
+
+I token di servizio restano in cache fino a poco prima della scadenza, e le richieste concorrenti
+per la stessa audience condividono una sola chiamata ad `auth`.
+
+### Strato express
+
+`createAuthentication`, `authorize` e `authorizeAny` esistono ma oggi nessun servizio li usa, e
+`createAuthentication` ammette qualunque token valido: prima di adottarli va fatto il refactoring
+che rende obbligatorio dichiarare chi è ammesso (`revisione/REFACTORING.md`). `authorize` e
+`authorizeAny` trattano già ogni token `service:*` come `SERVICE`, qualunque ruolo porti.
 
 ## Verifica locale
 
@@ -56,7 +84,8 @@ passa un controllo.
 
 `SERVICE` sta a 0 di proposito. La gerarchia è piatta, quindi a livello 1 sarebbe intercambiabile
 con SELLER e OPERATOR e un token di servizio passerebbe da solo ogni controllo non ADMIN. Le
-identità di servizio si ammettono **una rotta alla volta** con `authorizeAny(["SERVICE"])`.
+identità di servizio si ammettono **una rotta alla volta**, e si riconoscono dal soggetto (`service:*`),
+non dal claim `role`.
 
 ## Autorizzazione: dove NON sta
 
@@ -67,7 +96,7 @@ controllo in una dipendenza di rete su un solo servizio. È una scelta deliberat
 ## Installazione
 
 ```bash
-npm install github:Printee-Network/auth-client#v0.1.0
+npm install github:Printee-Network/auth-client#v0.3.0
 ```
 
 La versione si fissa col tag. Aggiornare è cambiare il tag: per una dipendenza di autenticazione

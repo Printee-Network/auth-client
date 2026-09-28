@@ -13,8 +13,10 @@ export type VerifierOptions = {
   readonly issuer: string;
   /** Nome di QUESTO servizio: un token emesso per un altro destinatario va rifiutato. */
   readonly audience: string;
-  readonly clockToleranceSeconds?: number;
 };
+
+/** Tolleranza sugli orologi fra `auth` e il servizio. */
+const TOLLERANZA_OROLOGIO_SECONDI = 5;
 
 /**
  * Verifica i token di `auth` usando **solo la chiave pubblica** presa dal JWKS.
@@ -41,7 +43,7 @@ export class AuthVerifier {
     const { payload } = await jwtVerify(token, this.keys, {
       issuer: this.options.issuer.replace(/\/+$/, ""),
       audience: this.options.audience,
-      clockTolerance: this.options.clockToleranceSeconds ?? 5,
+      clockTolerance: TOLLERANZA_OROLOGIO_SECONDI,
     }).catch((error: Error) => {
       throw new InvalidTokenError(error.message);
     });
@@ -58,7 +60,6 @@ export class AuthVerifier {
       azp: typeof payload.azp === "string" ? payload.azp : undefined,
       realm: payload.realm as Realm,
       email: typeof payload.email === "string" ? payload.email : undefined,
-      tenant: typeof payload.tenant === "string" ? payload.tenant : undefined,
       slug: typeof payload.slug === "string" ? payload.slug : undefined,
       role: role ?? undefined,
       iss: payload.iss as string,

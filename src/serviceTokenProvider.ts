@@ -9,12 +9,11 @@ export type ServiceTokenProviderOptions = {
   readonly issuer: string;
   readonly clientId: string;
   readonly clientSecret: string;
-  /** Quanto prima della scadenza rinnovare, per non usare mai un token al limite. */
-  readonly refreshSkewSeconds?: number;
 };
 
 type CachedToken = { readonly token: string; readonly expiresAt: number };
 
+/** Quanto prima della scadenza rinnovare, per non usare mai un token al limite. */
 const DEFAULT_SKEW_SECONDS = 30;
 
 /**
@@ -42,7 +41,7 @@ export class ServiceTokenProvider {
    * autorizzato per quel tenant.
    */
   async forService(audience: string, tenantSlug?: string): Promise<string> {
-    const key = `cc|${audience}|${tenantSlug ?? ""}`;
+    const key = `${audience}|${tenantSlug ?? ""}`;
     const cached = this.cache.get(key);
     if (cached && cached.expiresAt > Date.now()) return cached.token;
 
@@ -76,8 +75,7 @@ export class ServiceTokenProvider {
   private async request(key: string, extra: Record<string, string>): Promise<string> {
     try {
       const body = await this.post(extra);
-      const skew = this.options.refreshSkewSeconds ?? DEFAULT_SKEW_SECONDS;
-      const lifetime = Math.max(body.expiresIn - skew, 1);
+      const lifetime = Math.max(body.expiresIn - DEFAULT_SKEW_SECONDS, 1);
 
       this.cache.set(key, { token: body.accessToken, expiresAt: Date.now() + lifetime * 1000 });
       return body.accessToken;

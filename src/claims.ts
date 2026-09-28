@@ -11,13 +11,17 @@ export type AuthClaims = {
   readonly azp?: string;
   readonly realm: Realm;
   readonly email?: string;
-  readonly tenant?: string;
+  /** Il tenant, per slug. È l'unico riferimento al tenant nel token: `tenant` non esiste più. */
   readonly slug?: string;
   readonly role?: Role;
   readonly iss: string;
   readonly exp: number;
 };
 
-/** True se il token rappresenta un servizio e non una persona. */
+/**
+ * True se il token rappresenta un servizio e non una persona. Il soggetto è l'unico discriminante
+ * affidabile: `service:<clientId>` per costruzione. Il realm no — i token di servizio nascono
+ * `platform-admin` — e nemmeno il ruolo, che è una convenzione di registrazione del client.
+ */
 export const isServiceIdentity = (claims: AuthClaims): boolean =>
   claims.sub.startsWith("service:");

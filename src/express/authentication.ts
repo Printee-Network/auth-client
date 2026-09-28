@@ -10,8 +10,8 @@ const bearerOf = (header: string | undefined): string | null => {
  * Sostituisce l'`authentication.ts` di ogni servizio. Da HMAC con segreto condiviso a verifica
  * asimmetrica via JWKS: **è l'unico file di autenticazione che il refactoring cambia** per servizio.
  *
- * `req.user` mantiene la forma che i servizi già si aspettano (`id`, `email`, `role`, `tenantId`,
- * `slug`), più i campi nuovi: così `authorize()` e le sue chiamate restano identiche.
+ * `req.user` mantiene la forma che i servizi già si aspettano (`id`, `email`, `role`, `slug`), più
+ * i campi nuovi: così `authorize()` e le sue chiamate restano identiche.
  */
 export const createAuthentication = (verifier: AuthVerifier) =>
   async function authentication(req: Request, res: Response, next: NextFunction) {
@@ -27,7 +27,6 @@ export const createAuthentication = (verifier: AuthVerifier) =>
         id: claims.sub,
         email: claims.email ?? "",
         role: claims.role ?? "",
-        tenantId: claims.tenant,
         slug: claims.slug,
         realm: claims.realm,
         azp: claims.azp,

@@ -1,6 +1,6 @@
 {
   "name": "@printee-network/auth-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Client di auth: vocabolario dei ruoli + verifica dei token via JWKS. Ciò che un servizio installa per parlare con l'IdP.",
   "main": "./build/index.js",
   "types": "./build/index.d.ts",

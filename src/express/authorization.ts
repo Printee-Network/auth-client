@@ -9,7 +9,14 @@ import { hasPermission, toRole, type Role } from "../roles";
  * contattato — l'autorizzazione non è centralizzata, e non deve diventarlo
  * (AUTH_ARCHITETTURA.md §2).
  */
-const roleOf = (req: Request): Role | null => toRole(req.user?.role);
+/**
+ * Il ruolo con cui si decide. Un servizio vale sempre `SERVICE`, qualunque ruolo porti il token: il
+ * claim `role` di un token di servizio è quello con cui il client è stato registrato, e un client
+ * registrato come `SELLER` passava `authorize("SELLER")`. Il soggetto invece è `service:<clientId>`
+ * per costruzione (`isServiceIdentity`).
+ */
+const roleOf = (req: Request): Role | null =>
+  req.user?.id?.startsWith("service:") ? "SERVICE" : toRole(req.user?.role);
 
 export const authorize = (requiredRole: Role) =>
   async function authorization(req: Request, res: Response, next: NextFunction) {
