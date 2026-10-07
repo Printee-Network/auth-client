@@ -62,6 +62,47 @@ per la stessa audience condividono una sola chiamata ad `auth`.
 che rende obbligatorio dichiarare chi è ammesso (`revisione/REFACTORING.md`). `authorize` e
 `authorizeAny` trattano già ogni token `service:*` come `SERVICE`, qualunque ruolo porti.
 
+### Strato BFF (frontend Next.js)
+
+Un BFF tiene la sessione dell'utente in due cookie `httpOnly` (`session`, `refresh`) e parla con
+`auth` lato server. Le funzioni non dipendono da Next: lavorano su qualunque store di cookie con
+`set` e `delete` (quello di una server action o quello di una risposta) e restituiscono decisioni,
+non risposte HTTP.
+
+```ts
+import {
+  AuthVerifier, ClientSessione, soloPersoneDelRealm, verificaSessione,
+  sessioneDellaRichiesta, applicaRinnovo, rispostaSenzaSessione,
+  scriviCookieSessione, SESSION_COOKIE, REFRESH_COOKIE,
+} from "@printee-network/auth-client";
+
+const verifier = new AuthVerifier({ issuer, audience: "be" });
+const client = new ClientSessione({ issuer, audience: "be" });
+const verifica = (token?: string) =>
+  verificaSessione(verifier, token, soloPersoneDelRealm("tenant-staff"));
+
+// login (server action)
+const esito = await client.accedi({ realm: "tenant-staff", email, password, slug });
+if (esito.ok) scriviCookieSessione(await cookies(), esito.coppia);
+
+// proxy: verifica, rinnova se serve, applica l'esito alla risposta
+const { sessione, rinnovo } = await sessioneDellaRichiesta({
+  accessToken: req.cookies.get(SESSION_COOKIE)?.value,
+  refreshToken: req.cookies.get(REFRESH_COOKIE)?.value,
+  verifica,
+  client,
+});
+applicaRinnovo(response.cookies, rinnovo);
+```
+
+- `soloPersoneDelRealm` scarta i token di servizio: nascono `platform-admin` e in una console di
+  piattaforma aprirebbero una sessione a un servizio.
+- Un refresh token **rifiutato** da `auth` fa cancellare i cookie; con `auth` irraggiungibile si
+  tengono, perché torneranno buoni.
+- `rispostaSenzaSessione` decide cosa fare su una rotta protetta senza sessione: le server action
+  passano (le controlla l'azione), le API ricevono 401, le pagine vanno al login.
+- Lo slug del tenant passato ad `accedi` non arriva mai dal client: il BFF lo ricava dal sottodominio.
+
 ## Verifica locale
 
 Il JWKS è in cache e `auth` **non viene contattato a ogni richiesta**. Viene ri-scaricato solo
@@ -96,7 +137,7 @@ controllo in una dipendenza di rete su un solo servizio. È una scelta deliberat
 ## Installazione
 
 ```bash
-npm install github:Printee-Network/auth-client#v0.3.0
+npm install github:Printee-Network/auth-client#v0.4.0
 ```
 
 La versione si fissa col tag. Aggiornare è cambiare il tag: per una dipendenza di autenticazione

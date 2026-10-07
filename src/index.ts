@@ -7,3 +7,4 @@ export { ServiceTokenError, ServiceTokenProvider } from "./serviceTokenProvider"
 export type { ServiceTokenProviderOptions } from "./serviceTokenProvider";
 export type { VerifierOptions } from "./verifier";
 export { authorize, authorizeAny, createAuthentication } from "./express";
+export * from "./bff";
